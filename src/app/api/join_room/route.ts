@@ -5,10 +5,11 @@ import sessionOptions from "../../../lib/session";
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const roomCode = formData.get("room_code");
+  const username = formData.get("username");
 
-  if (!roomCode) {
+  if (!roomCode || !username) {
     return NextResponse.json(
-      { error: "No room code entered" },
+      { error: "Room code or username was not entered" },
       { status: 400 }
     );
   }
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
 
   const session = await getIronSession(req, res, sessionOptions);
   session.roomCode = roomCode.toString();
+  session.username = username.toString();
   await session.save();
 
   return res;

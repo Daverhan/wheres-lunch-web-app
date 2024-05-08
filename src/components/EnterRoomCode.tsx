@@ -27,9 +27,19 @@ export default function EnterRoomCode() {
       onSubmit={handleSubmit}
       className="flex flex-col text-xl items-center gap-6"
     >
-      <div className="flex gap-2 text-xl">
-        <label htmlFor="room_code">Room Code:</label>
-        <input type="text" name="room_code" id="room_code"></input>
+      <div className="flex flex-col gap-4 text-xl">
+        <input
+          placeholder="Room Code"
+          type="text"
+          name="room_code"
+          id="room_code"
+        ></input>
+        <input
+          placeholder="Username"
+          type="text"
+          name="username"
+          id="username"
+        ></input>
       </div>
       <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full w-36">
         Join Room
