@@ -10,14 +10,16 @@ export default function EnterRoomCode() {
 
     const formData = new FormData(e.target as HTMLFormElement);
 
-    /*
-        const response = await fetch("/api/join_room", {
-          method: "POST",
-          body: formData,
-        });
-    */
+    const response = await fetch("/api/join_room", {
+      method: "POST",
+      body: formData,
+    });
 
-    router.push("/enter_details");
+    if (response.ok) {
+      const responseJSON = await response.json();
+      console.log(responseJSON.roomCode);
+      router.push("/enter_details");
+    }
   };
 
   return (
