@@ -1,4 +1,4 @@
-import EnterRoomCode from "./EnterRoomCode";
+import JoinRoomForm from "./JoinRoomForm";
 
 export default function Home() {
   return (
@@ -8,7 +8,7 @@ export default function Home() {
           If the entered room code exists, you will join the room. If it does
           not exist, one will be created.
         </h2>
-        <EnterRoomCode />
+        <JoinRoomForm />
       </div>
     </section>
   );

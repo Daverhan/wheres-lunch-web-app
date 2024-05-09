@@ -2,7 +2,7 @@
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-export default function EnterRoomCode() {
+export default function JoinRoomForm() {
   const router = useRouter();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
