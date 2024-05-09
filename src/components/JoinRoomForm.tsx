@@ -15,11 +15,7 @@ export default function JoinRoomForm() {
       body: formData,
     });
 
-    if (response.ok) {
-      const responseJSON = await response.json();
-      console.log(responseJSON.roomCode);
-      router.push("/create_selections");
-    }
+    if (response.ok) router.push("/create_selections");
   };
 
   return (
@@ -39,6 +35,7 @@ export default function JoinRoomForm() {
           type="text"
           name="username"
           id="username"
+          autoComplete="off"
         ></input>
       </div>
       <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full w-36">
