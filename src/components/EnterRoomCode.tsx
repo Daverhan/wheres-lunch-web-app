@@ -18,7 +18,7 @@ export default function EnterRoomCode() {
     if (response.ok) {
       const responseJSON = await response.json();
       console.log(responseJSON.roomCode);
-      router.push("/enter_details");
+      router.push("/create_selections");
     }
   };
 
