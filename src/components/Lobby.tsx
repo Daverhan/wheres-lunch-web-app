@@ -1,30 +1,54 @@
 "use client";
 import { useEffect, useState } from "react";
+import { socket } from "../socket";
 
 export default function Lobby() {
   const [roomCode, setRoomCode] = useState<string>("");
-
-  const getRoomCode = async () => {
-    const response = await fetch("/api/room_code");
-
-    if (response.ok) {
-      const responseJSON = await response.json();
-      setRoomCode(responseJSON.roomCode);
-    }
-  };
+  const [username, setUsername] = useState<string>("");
+  const [joinedUsers, setJoinedUsers] = useState<string[]>([]);
 
   useEffect(() => {
-    getRoomCode();
+    const getUserInfo = async () => {
+      const response = await fetch("/api/current_user");
+
+      if (response.ok) {
+        const responseJSON = await response.json();
+        setRoomCode(responseJSON.roomCode);
+        setUsername(responseJSON.username);
+
+        socket.connect();
+        socket.emit("join-room", responseJSON.roomCode, responseJSON.username);
+      }
+    };
+
+    getUserInfo();
+
+    const handleUpdateLobby = (users: string[]) => {
+      setJoinedUsers(users);
+    };
+
+    socket.on("update-lobby", handleUpdateLobby);
+
+    const handleBeforeUnload = () => {
+      socket.disconnect();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      handleBeforeUnload();
+    };
   }, []);
 
   return (
-    <section className="flex flex-col mt-20 bg-purple-200 min-h-screen-adjusted">
+    <section className="flex flex-col items-center mt-20 bg-purple-200 min-h-screen-adjusted">
       {roomCode ? (
-        <h2 className="absolute text-xl top-11 left-1/2 -translate-x-1/2">
-          Room Code: {roomCode}
-        </h2>
+        <h2 className="absolute text-xl top-11">Room Code: {roomCode}</h2>
       ) : null}
-      <h2 className="text-center mt-4">Lobby</h2>
+      {joinedUsers.map((username) => (
+        <div className="text-2xl">{username}</div>
+      ))}
     </section>
   );
 }

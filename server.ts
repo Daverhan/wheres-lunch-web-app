@@ -13,8 +13,28 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer);
 
+  let users: string[] = [];
+
   io.on("connection", (socket) => {
-    console.log("A user has connected", socket.id);
+    socket.on("join-room", (roomCode, username) => {
+      if (!users.includes(username)) {
+        socket.data.username = username;
+        users.push(username);
+      }
+      io.emit("update-lobby", users);
+    });
+
+    socket.on("disconnect", () => {
+      const username = socket.data.username;
+
+      if (username) {
+        const indexToRemove = users.indexOf(username);
+        if (indexToRemove !== -1) {
+          users.splice(indexToRemove, 1);
+          io.emit("update-lobby", users);
+        }
+      }
+    });
   });
 
   httpServer
