@@ -13,25 +13,34 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer);
 
-  let users: string[] = [];
+  let rooms = new Map<string, string[]>();
 
   io.on("connection", (socket) => {
     socket.on("join-room", (roomCode, username) => {
-      if (!users.includes(username)) {
-        socket.data.username = username;
-        users.push(username);
+      if (!rooms.has(roomCode)) {
+        rooms.set(roomCode, []);
       }
-      io.emit("update-lobby", users);
+
+      if (!rooms.get(roomCode)?.includes(username)) {
+        socket.data.username = username;
+        socket.data.roomCode = roomCode;
+        socket.join(roomCode);
+        rooms.get(roomCode)?.push(username);
+      }
+
+      io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
     });
 
     socket.on("disconnect", () => {
+      const roomCode = socket.data.roomCode;
       const username = socket.data.username;
+      const users = rooms.get(roomCode) as string[];
 
-      if (username) {
+      if (username && roomCode) {
         const indexToRemove = users.indexOf(username);
         if (indexToRemove !== -1) {
-          users.splice(indexToRemove, 1);
-          io.emit("update-lobby", users);
+          rooms.get(roomCode)?.splice(indexToRemove, 1);
+          io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
         }
       }
     });
