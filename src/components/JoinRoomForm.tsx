@@ -1,5 +1,5 @@
 "use client";
-import type { FormEvent } from "react";
+import { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 export default function JoinRoomForm() {

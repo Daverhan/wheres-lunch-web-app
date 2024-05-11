@@ -26,10 +26,32 @@ app.prepare().then(() => {
         socket.data.username = username;
         socket.data.roomCode = roomCode;
         socket.join(roomCode);
-        rooms.get(roomCode)?.push({ username, ready: false });
+        rooms.get(roomCode)?.push({
+          username,
+          ready: false,
+          selections: [],
+        });
       }
 
       io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+    });
+
+    socket.on("confirm-selections", (selections) => {
+      const roomCode = socket.data.roomCode;
+      const username = socket.data.username;
+      const users = rooms.get(roomCode) as User[];
+
+      if (username && roomCode) {
+        const indexToModify = users.findIndex(
+          (user) => user.username === username
+        );
+
+        if (indexToModify !== -1) {
+          users[indexToModify].ready = true;
+          users[indexToModify].selections = selections;
+          io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+        }
+      }
     });
 
     socket.on("disconnect", () => {
