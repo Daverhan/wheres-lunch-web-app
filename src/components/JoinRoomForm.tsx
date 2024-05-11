@@ -15,7 +15,7 @@ export default function JoinRoomForm() {
       body: formData,
     });
 
-    if (response.ok) router.push("/create_selections");
+    if (response.ok) router.push("/lobby/create_selections");
   };
 
   return (
