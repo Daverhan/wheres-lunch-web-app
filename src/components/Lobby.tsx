@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { socket } from "../socket";
+import { User } from "../interfaces";
 
 export default function Lobby() {
   const [roomCode, setRoomCode] = useState<string>("");
   const [username, setUsername] = useState<string>("");
-  const [joinedUsers, setJoinedUsers] = useState<string[]>([]);
+  const [joinedUsers, setJoinedUsers] = useState<User[]>([]);
 
   useEffect(() => {
     const getUserInfo = async () => {
@@ -23,7 +24,7 @@ export default function Lobby() {
 
     getUserInfo();
 
-    const handleUpdateLobby = (users: string[]) => {
+    const handleUpdateLobby = (users: User[]) => {
       setJoinedUsers(users);
     };
 
@@ -44,11 +45,20 @@ export default function Lobby() {
   return (
     <section className="flex flex-col items-center mt-20 bg-purple-200 min-h-screen-adjusted">
       {roomCode ? (
-        <h2 className="absolute text-xl top-11">Room Code: {roomCode}</h2>
+        <h2 className="fixed text-xl top-11">Room Code: {roomCode}</h2>
       ) : null}
-      {joinedUsers.map((username) => (
-        <div className="text-2xl">{username}</div>
-      ))}
+      <div>
+        {joinedUsers.map((user) => (
+          <div className="m-1 grid grid-cols-[85%_15%] w-80 md:w-96">
+            <div className="p-0.5 text-2xl border-2 border-solid border-black">
+              {user.username}
+            </div>
+            <div className="p-0.5 text-2xl border-y-2 border-x-2 ml-0.5 border-black text-center">
+              {user.ready ? "Y" : "N"}
+            </div>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

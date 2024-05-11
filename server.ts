@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+import { User } from "./src/interfaces";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -13,7 +14,7 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer);
 
-  let rooms = new Map<string, string[]>();
+  let rooms = new Map<string, User[]>();
 
   io.on("connection", (socket) => {
     socket.on("join-room", (roomCode, username) => {
@@ -21,11 +22,11 @@ app.prepare().then(() => {
         rooms.set(roomCode, []);
       }
 
-      if (!rooms.get(roomCode)?.includes(username)) {
+      if (!rooms.get(roomCode)?.some((user) => user.username === username)) {
         socket.data.username = username;
         socket.data.roomCode = roomCode;
         socket.join(roomCode);
-        rooms.get(roomCode)?.push(username);
+        rooms.get(roomCode)?.push({ username, ready: false });
       }
 
       io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
@@ -34,10 +35,13 @@ app.prepare().then(() => {
     socket.on("disconnect", () => {
       const roomCode = socket.data.roomCode;
       const username = socket.data.username;
-      const users = rooms.get(roomCode) as string[];
+      const users = rooms.get(roomCode) as User[];
 
       if (username && roomCode) {
-        const indexToRemove = users.indexOf(username);
+        const indexToRemove = users.findIndex(
+          (user) => user.username === username
+        );
+
         if (indexToRemove !== -1) {
           rooms.get(roomCode)?.splice(indexToRemove, 1);
           io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
