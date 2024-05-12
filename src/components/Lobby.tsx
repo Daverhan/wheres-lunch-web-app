@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { socket } from "../socket";
 import { User } from "../interfaces";
+import { useRouter } from "next/navigation";
 
 export default function Lobby() {
   const [roomCode, setRoomCode] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [joinedUsers, setJoinedUsers] = useState<User[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const getUserInfo = async () => {
@@ -29,6 +31,10 @@ export default function Lobby() {
     };
 
     socket.on("update-lobby", handleUpdateLobby);
+
+    socket.on("proceed-to-voting", () => {
+      router.replace("/lobby/vote_selections");
+    });
 
     const handleBeforeUnload = () => {
       socket.disconnect();

@@ -28,9 +28,10 @@ export default function CreateSelectionsForm() {
       onSubmit={handleSelectionConfirmation}
       className="flex flex-col w-80 sm:w-96 px-1 gap-2 mt-4"
     >
-      <h2 className="text-lg sm:text-2xl text-center">
-        Enter up to three locations
-      </h2>
+      <h2 className="text-lg sm:text-2xl text-center">Selection Phase</h2>
+      <h3 className="text-center sm:text-lg -mt-2">
+        Enter up to three choices
+      </h3>
       <input
         className="sm:text-lg"
         placeholder="First Selection"

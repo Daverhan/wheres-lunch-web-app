@@ -11,15 +11,40 @@ const handler = app.getRequestHandler();
 
 app.prepare().then(() => {
   const httpServer = createServer(handler);
-
   const io = new Server(httpServer);
 
   let rooms = new Map<string, User[]>();
+  let selections = new Map<string, string[]>();
 
   io.on("connection", (socket) => {
+    const proceedToVoting = (roomCode: string) => {
+      const users = rooms.get(roomCode) as User[];
+
+      users.forEach((user) => {
+        user.ready = false;
+      });
+
+      io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+
+      let gatherSelections: string[] = [];
+
+      users.forEach((user) => {
+        gatherSelections = gatherSelections.concat(user.selections);
+      });
+
+      io.to(roomCode).emit("proceed-to-voting");
+      selections.set(roomCode, gatherSelections);
+    };
+
+    socket.on("get-selections-request", () => {
+      const roomCode = socket.data.roomCode;
+      io.to(roomCode).emit("get-selections-response", selections.get(roomCode));
+    });
+
     socket.on("join-room", (roomCode, username) => {
       if (!rooms.has(roomCode)) {
         rooms.set(roomCode, []);
+        selections.set(roomCode, []);
       }
 
       if (!rooms.get(roomCode)?.some((user) => user.username === username)) {
@@ -52,6 +77,9 @@ app.prepare().then(() => {
           io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
         }
       }
+
+      if (!users.some((user) => user.ready === false))
+        proceedToVoting(roomCode);
     });
 
     socket.on("disconnect", () => {
@@ -67,6 +95,9 @@ app.prepare().then(() => {
         if (indexToRemove !== -1) {
           rooms.get(roomCode)?.splice(indexToRemove, 1);
           io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+
+          if (!users.some((user) => user.ready === false))
+            proceedToVoting(roomCode);
         }
       }
     });
