@@ -36,6 +36,10 @@ export default function Lobby() {
       router.replace("/lobby/vote_selections");
     });
 
+    socket.on("proceed-to-results", () => {
+      router.replace("/results");
+    });
+
     const handleBeforeUnload = () => {
       socket.disconnect();
     };
