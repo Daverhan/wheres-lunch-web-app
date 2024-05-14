@@ -4,3 +4,10 @@ export interface User {
   selections: [];
   votes: [];
 }
+
+export interface Lobby {
+  users: User[];
+  selections: string[];
+  locationWon: string;
+  hasStarted: boolean;
+}

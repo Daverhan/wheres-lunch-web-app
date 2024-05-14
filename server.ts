@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
-import { User } from "./src/interfaces";
+import { Lobby } from "./src/interfaces";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -13,35 +13,33 @@ app.prepare().then(() => {
   const httpServer = createServer(handler);
   const io = new Server(httpServer);
 
-  let rooms = new Map<string, User[]>();
-  let selections = new Map<string, string[]>();
-  let locationsWon = new Map<string, string>();
+  let rooms = new Map<string, Lobby>();
 
   io.on("connection", (socket) => {
     const proceedToVoting = (roomCode: string) => {
-      const users = rooms.get(roomCode) as User[];
+      const lobby = rooms.get(roomCode) as Lobby;
 
-      users.forEach((user) => {
+      lobby.users.forEach((user) => {
         user.ready = false;
       });
 
-      io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+      io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
 
       let gatherSelections: string[] = [];
 
-      users.forEach((user) => {
+      lobby.users.forEach((user) => {
         gatherSelections = gatherSelections.concat(user.selections);
       });
 
-      selections.set(roomCode, gatherSelections);
+      lobby.selections = gatherSelections;
       io.to(roomCode).emit("proceed-to-voting");
     };
 
     const proceedToResults = (roomCode: string) => {
-      const users = rooms.get(roomCode) as User[];
+      const lobby = rooms.get(roomCode) as Lobby;
       const aggregatedVotes = new Map<string, number>();
 
-      users.forEach((user) => {
+      lobby.users.forEach((user) => {
         user.votes.forEach((location) => {
           if (aggregatedVotes.has(location)) {
             aggregatedVotes.set(
@@ -63,33 +61,44 @@ app.prepare().then(() => {
       for (const [key, value] of aggregatedVotes.entries())
         if (value === maxVotes) maxVoteKeys.push(key);
 
-      const locationWon =
+      lobby.locationWon =
         maxVoteKeys[Math.floor(Math.random() * maxVoteKeys.length)];
-
-      locationsWon.set(roomCode, locationWon);
       io.to(roomCode).emit("proceed-to-results");
     };
 
     socket.on("get-selections-request", () => {
       const roomCode = socket.data.roomCode;
-      io.to(roomCode).emit("get-selections-response", selections.get(roomCode));
+      io.to(roomCode).emit(
+        "get-selections-response",
+        rooms.get(roomCode)?.selections
+      );
     });
 
     socket.on("get-results-request", (roomCode) => {
       socket.join(roomCode);
-      io.to(roomCode).emit("get-results-response", locationsWon.get(roomCode));
+      io.to(roomCode).emit(
+        "get-results-response",
+        rooms.get(roomCode)?.locationWon
+      );
     });
 
     socket.on("join-room", (roomCode, username) => {
       if (!rooms.has(roomCode)) {
-        rooms.set(roomCode, []);
+        rooms.set(roomCode, {
+          users: [],
+          selections: [],
+          locationWon: "",
+          hasStarted: false,
+        });
       }
 
-      if (!rooms.get(roomCode)?.some((user) => user.username === username)) {
+      if (
+        !rooms.get(roomCode)?.users.some((user) => user.username === username)
+      ) {
         socket.data.username = username;
         socket.data.roomCode = roomCode;
         socket.join(roomCode);
-        rooms.get(roomCode)?.push({
+        rooms.get(roomCode)?.users.push({
           username,
           ready: false,
           selections: [],
@@ -97,66 +106,66 @@ app.prepare().then(() => {
         });
       }
 
-      io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+      io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
     });
 
     socket.on("confirm-selections", (selections) => {
       const roomCode = socket.data.roomCode;
       const username = socket.data.username;
-      const users = rooms.get(roomCode) as User[];
+      const lobby = rooms.get(roomCode) as Lobby;
 
       if (username && roomCode) {
-        const indexToModify = users.findIndex(
+        const indexToModify = lobby.users.findIndex(
           (user) => user.username === username
         );
 
         if (indexToModify !== -1) {
-          users[indexToModify].ready = true;
-          users[indexToModify].selections = selections;
-          io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+          lobby.users[indexToModify].ready = true;
+          lobby.users[indexToModify].selections = selections;
+          io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
         }
       }
 
-      if (!users.some((user) => user.ready === false))
+      if (!lobby.users.some((user) => user.ready === false))
         proceedToVoting(roomCode);
     });
 
     socket.on("confirm-votes", (votes) => {
       const roomCode = socket.data.roomCode;
       const username = socket.data.username;
-      const users = rooms.get(roomCode) as User[];
+      const lobby = rooms.get(roomCode) as Lobby;
 
       if (username && roomCode) {
-        const indexToModify = users.findIndex(
+        const indexToModify = lobby.users.findIndex(
           (user) => user.username === username
         );
 
         if (indexToModify !== -1) {
-          users[indexToModify].ready = true;
-          users[indexToModify].votes = votes;
-          io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+          lobby.users[indexToModify].ready = true;
+          lobby.users[indexToModify].votes = votes;
+          io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
         }
       }
 
-      if (!users.some((user) => user.ready === false))
+      if (!lobby.users.some((user) => user.ready === false))
         proceedToResults(roomCode);
     });
 
     socket.on("disconnect", () => {
       const roomCode = socket.data.roomCode;
       const username = socket.data.username;
-      const users = rooms.get(roomCode) as User[];
+      const lobby = rooms.get(roomCode) as Lobby;
 
       if (username && roomCode) {
-        const indexToRemove = users.findIndex(
+        const indexToRemove = lobby.users.findIndex(
           (user) => user.username === username
         );
 
         if (indexToRemove !== -1) {
-          rooms.get(roomCode)?.splice(indexToRemove, 1);
-          io.to(roomCode).emit("update-lobby", rooms.get(roomCode));
+          rooms.get(roomCode)?.users.splice(indexToRemove, 1);
+          io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
 
-          if (!users.some((user) => user.ready === false))
+          if (!lobby.users.some((user) => user.ready === false))
             proceedToVoting(roomCode);
         }
       }
