@@ -1,12 +1,11 @@
 "use client";
 import { useEffect, useState, useContext } from "react";
 import { socket } from "../socket";
-import { User } from "../interfaces";
+import { User } from "../lib/interfaces";
 import { useRouter } from "next/navigation";
 
 export default function Lobby() {
   const [roomCode, setRoomCode] = useState<string>("");
-  const [username, setUsername] = useState<string>("");
   const [joinedUsers, setJoinedUsers] = useState<User[]>([]);
   const router = useRouter();
 
@@ -17,7 +16,6 @@ export default function Lobby() {
       if (response.ok) {
         const responseJSON = await response.json();
         setRoomCode(responseJSON.roomCode);
-        setUsername(responseJSON.username);
 
         socket.connect();
         socket.emit("join-room", responseJSON.roomCode, responseJSON.username);

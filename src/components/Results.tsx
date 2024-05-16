@@ -5,22 +5,28 @@ import { socket } from "../socket";
 export default function Results() {
   const [winner, setWinner] = useState("");
 
+  const logout = async () => {
+    await fetch("/api/logout");
+  };
+
+  const getWinner = async () => {
+    const response = await fetch("/api/current_user");
+
+    if (response.ok) {
+      const responseJSON = await response.json();
+      socket.emit("get-results-request", responseJSON.roomCode);
+
+      const handleResultsResponse = (winner: string) => {
+        setWinner(winner);
+        logout();
+      };
+
+      socket.on("get-results-response", handleResultsResponse);
+    }
+  };
+
   useEffect(() => {
-    const getWinner = async () => {
-      const response = await fetch("/api/current_user");
-
-      if (response.ok) {
-        const responseJSON = await response.json();
-
-        socket.connect();
-        socket.emit("get-results-request", responseJSON.roomCode);
-        socket.on("get-results-response", (winner) => {
-          setWinner(winner);
-          socket.disconnect();
-        });
-      }
-    };
-
+    socket.connect();
     getWinner();
   }, []);
 

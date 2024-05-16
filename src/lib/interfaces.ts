@@ -1,13 +1,13 @@
 export interface User {
   username: string;
   ready: boolean;
-  selections: [];
-  votes: [];
+  selections: string[];
+  votes: string[];
 }
 
 export interface Lobby {
   users: User[];
   selections: string[];
   locationWon: string;
-  hasStarted: boolean;
+  gameState: string;
 }

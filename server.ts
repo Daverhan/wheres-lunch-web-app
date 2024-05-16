@@ -1,7 +1,8 @@
+import "dotenv/config";
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
-import { Lobby } from "./src/interfaces";
+import { getLobby, saveLobby } from "./src/lib/redis";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -13,161 +14,197 @@ app.prepare().then(() => {
   const httpServer = createServer(handler);
   const io = new Server(httpServer);
 
-  let rooms = new Map<string, Lobby>();
-
   io.on("connection", (socket) => {
-    const proceedToVoting = (roomCode: string) => {
-      const lobby = rooms.get(roomCode) as Lobby;
+    const updateLobbyAndCheckNextStep = async (roomCode: string) => {
+      let lobby = await getLobby(roomCode);
 
-      lobby.users.forEach((user) => {
-        user.ready = false;
-      });
+      if (!lobby) return;
 
-      io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
+      await saveLobby(roomCode, lobby);
+      io.to(roomCode).emit("update-lobby", lobby.users);
 
-      let gatherSelections: string[] = [];
-
-      lobby.users.forEach((user) => {
-        gatherSelections = gatherSelections.concat(user.selections);
-      });
-
-      lobby.selections = gatherSelections;
-      io.to(roomCode).emit("proceed-to-voting");
+      if (lobby.users.every((user) => user.ready)) {
+        switch (lobby.gameState) {
+          case "create_selections":
+            proceedToVoting(roomCode);
+            break;
+          case "vote_selections":
+            proceedToResults(roomCode);
+            break;
+          default:
+            break;
+        }
+      }
     };
 
-    const proceedToResults = (roomCode: string) => {
-      const lobby = rooms.get(roomCode) as Lobby;
-      const aggregatedVotes = new Map<string, number>();
+    const proceedToVoting = async (roomCode: string) => {
+      let lobby = await getLobby(roomCode);
+
+      if (!lobby)
+        throw new Error("Lobby was unable to be retrieved in proceedToVoting");
+
+      lobby.gameState = "vote_selections";
+      lobby.users.forEach((user) => (user.ready = false));
+      lobby.selections = lobby.users.flatMap((user) => user.selections);
+
+      await saveLobby(roomCode, lobby);
+      await updateLobbyAndCheckNextStep(roomCode);
+
+      io.to(roomCode).emit("proceed-to-voting", lobby.selections);
+    };
+
+    socket.on("get-selections-request", async () => {
+      const roomCode = socket.data.roomCode;
+      let lobby = await getLobby(roomCode);
+
+      if (!lobby)
+        throw new Error(
+          "Lobby was unable to be retrieved in get-selections-request"
+        );
+
+      socket.emit("get-selections-response", lobby.selections);
+    });
+
+    socket.on("get-results-request", async (roomCode) => {
+      let lobby = await getLobby(roomCode);
+
+      if (!lobby)
+        throw new Error(
+          "Lobby was unable to be retrieved in get-results-request"
+        );
+
+      socket.emit("get-results-response", lobby.locationWon);
+    });
+
+    socket.on("confirm-votes", async (selectedVotes) => {
+      const roomCode = socket.data.roomCode;
+      const username = socket.data.username;
+      let lobby = await getLobby(roomCode);
+
+      if (!lobby)
+        throw new Error("Lobby was unable to be retrieved in confirm-votes");
+
+      const userIndex = lobby.users.findIndex(
+        (user) => user.username === username
+      );
+
+      if (userIndex !== -1) {
+        lobby.users[userIndex].votes = selectedVotes;
+        lobby.users[userIndex].ready = true;
+      }
+
+      await saveLobby(roomCode, lobby);
+      await updateLobbyAndCheckNextStep(roomCode);
+    });
+
+    const proceedToResults = async (roomCode: string) => {
+      let lobby = await getLobby(roomCode);
+
+      if (!lobby)
+        throw new Error("Lobby was unable to be retrieved in proceedToResults");
+
+      lobby.gameState = "finished";
+      const aggregatedVotes = new Map();
 
       lobby.users.forEach((user) => {
         user.votes.forEach((location) => {
-          if (aggregatedVotes.has(location)) {
-            aggregatedVotes.set(
-              location,
-              (aggregatedVotes.get(location) || 0) + 1
-            );
-          } else {
-            aggregatedVotes.set(location, 1);
-          }
+          aggregatedVotes.set(
+            location,
+            (aggregatedVotes.get(location) || 0) + 1
+          );
         });
       });
 
-      let maxVotes = -Infinity;
-      const maxVoteKeys: string[] = [];
+      let maxVotes = Math.max(...aggregatedVotes.values());
 
-      for (const value of aggregatedVotes.values())
-        if (value > maxVotes) maxVotes = value;
+      lobby.locationWon = [...aggregatedVotes.entries()]
+        .filter(([_, v]) => v === maxVotes)
+        .map(([k]) => k)[0];
 
-      for (const [key, value] of aggregatedVotes.entries())
-        if (value === maxVotes) maxVoteKeys.push(key);
+      await saveLobby(roomCode, lobby);
+      await updateLobbyAndCheckNextStep(roomCode);
 
-      lobby.locationWon =
-        maxVoteKeys[Math.floor(Math.random() * maxVoteKeys.length)];
       io.to(roomCode).emit("proceed-to-results");
     };
 
-    socket.on("get-selections-request", () => {
-      const roomCode = socket.data.roomCode;
-      io.to(roomCode).emit(
-        "get-selections-response",
-        rooms.get(roomCode)?.selections
-      );
-    });
+    socket.on("join-room", async (roomCode, username) => {
+      let lobby = await getLobby(roomCode);
 
-    socket.on("get-results-request", (roomCode) => {
-      socket.join(roomCode);
-      io.to(roomCode).emit(
-        "get-results-response",
-        rooms.get(roomCode)?.locationWon
-      );
-    });
-
-    socket.on("join-room", (roomCode, username) => {
-      if (!rooms.has(roomCode)) {
-        rooms.set(roomCode, {
+      if (!lobby) {
+        lobby = {
           users: [],
           selections: [],
           locationWon: "",
-          hasStarted: false,
-        });
-      }
+          gameState: "create_selections",
+        };
 
-      if (
-        !rooms.get(roomCode)?.users.some((user) => user.username === username)
-      ) {
-        socket.data.username = username;
-        socket.data.roomCode = roomCode;
-        socket.join(roomCode);
-        rooms.get(roomCode)?.users.push({
+        lobby.users.push({
           username,
           ready: false,
           selections: [],
           votes: [],
         });
+
+        socket.data.username = username;
+        socket.data.roomCode = roomCode;
+        socket.join(roomCode);
+
+        await saveLobby(roomCode, lobby);
+      } else if (!lobby.users.some((user) => user.username === username)) {
+        lobby.users.push({
+          username,
+          ready: false,
+          selections: [],
+          votes: [],
+        });
+
+        socket.data.username = username;
+        socket.data.roomCode = roomCode;
+        socket.join(roomCode);
+
+        await saveLobby(roomCode, lobby);
       }
 
-      io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
+      io.to(roomCode).emit("update-lobby", lobby.users);
     });
 
-    socket.on("confirm-selections", (selections) => {
+    socket.on("confirm-selections", async (selections) => {
       const roomCode = socket.data.roomCode;
       const username = socket.data.username;
-      const lobby = rooms.get(roomCode) as Lobby;
+      let lobby = await getLobby(roomCode);
 
-      if (username && roomCode) {
-        const indexToModify = lobby.users.findIndex(
-          (user) => user.username === username
+      if (!lobby)
+        throw new Error(
+          "Lobby was unable to be retrieved in confirm-selections"
         );
 
-        if (indexToModify !== -1) {
-          lobby.users[indexToModify].ready = true;
-          lobby.users[indexToModify].selections = selections;
-          io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
-        }
+      const userIndex = lobby.users.findIndex(
+        (user) => user.username === username
+      );
+
+      if (userIndex !== -1) {
+        lobby.users[userIndex].selections = selections;
+        lobby.users[userIndex].ready = true;
       }
 
-      if (!lobby.users.some((user) => user.ready === false))
-        proceedToVoting(roomCode);
+      await saveLobby(roomCode, lobby);
+      await updateLobbyAndCheckNextStep(roomCode);
     });
 
-    socket.on("confirm-votes", (votes) => {
+    socket.on("disconnect", async () => {
       const roomCode = socket.data.roomCode;
       const username = socket.data.username;
-      const lobby = rooms.get(roomCode) as Lobby;
+      let lobby = await getLobby(roomCode);
 
-      if (username && roomCode) {
-        const indexToModify = lobby.users.findIndex(
-          (user) => user.username === username
-        );
+      if (!lobby) return;
 
-        if (indexToModify !== -1) {
-          lobby.users[indexToModify].ready = true;
-          lobby.users[indexToModify].votes = votes;
-          io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
-        }
-      }
-
-      if (!lobby.users.some((user) => user.ready === false))
-        proceedToResults(roomCode);
-    });
-
-    socket.on("disconnect", () => {
-      const roomCode = socket.data.roomCode;
-      const username = socket.data.username;
-      const lobby = rooms.get(roomCode) as Lobby;
-
-      if (username && roomCode) {
-        const indexToRemove = lobby.users.findIndex(
-          (user) => user.username === username
-        );
-
-        if (indexToRemove !== -1) {
-          rooms.get(roomCode)?.users.splice(indexToRemove, 1);
-          io.to(roomCode).emit("update-lobby", rooms.get(roomCode)?.users);
-
-          if (!lobby.users.some((user) => user.ready === false))
-            proceedToVoting(roomCode);
-        }
+      const indexToRemove = lobby.users.findIndex(
+        (user) => user.username === username
+      );
+      if (indexToRemove !== -1) {
+        lobby.users.splice(indexToRemove, 1);
+        await saveLobby(roomCode, lobby);
+        await updateLobbyAndCheckNextStep(roomCode);
       }
     });
   });

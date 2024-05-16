@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import sessionOptions from "../../../lib/session";
 
-export async function GET(req: NextRequest, res: NextResponse) {
+export async function GET(req: NextRequest) {
+  const res = NextResponse.json({ message: "Session cookie deleted" });
   const session = await getIronSession(req, res, sessionOptions);
 
   if (!session.roomCode || !session.username) {
@@ -12,8 +13,6 @@ export async function GET(req: NextRequest, res: NextResponse) {
     );
   }
 
-  return NextResponse.json({
-    roomCode: session.roomCode.toString(),
-    username: session.username.toString(),
-  });
+  session.destroy();
+  return res;
 }
