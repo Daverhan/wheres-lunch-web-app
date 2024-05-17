@@ -1,3 +1,3 @@
-# whats-lunch-web-app
+# wheres-lunch-web-app
 
-What's Lunch?
+Where's Lunch?

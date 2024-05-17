@@ -3,9 +3,9 @@ import "../styles/globals.css";
 import Header from "../components/Header";
 
 export const metadata: Metadata = {
-  title: "What's Lunch?",
+  title: "Where's Lunch?",
   description:
-    "A web application designed to help you and your friends decide on what to eat for lunch today.",
+    "A web application designed to help you and your friends decide on where to eat for lunch.",
 };
 
 export default function RootLayout({
