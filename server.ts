@@ -2,17 +2,36 @@ import "dotenv/config";
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+import cors from "cors";
 import { getLobby, saveLobby } from "./src/lib/redis";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
-const port = 3000;
+const hostname = process.env.HOST || "localhost";
+const port = parseInt(process.env.PORT || "3000", 10);
 const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
 
 app.prepare().then(() => {
-  const httpServer = createServer(handler);
-  const io = new Server(httpServer);
+  const httpServer = createServer((req, res) => {
+    const corsOptions = {
+      origin: "*",
+      credentials: true,
+    };
+    cors(corsOptions)(req, res, () => {
+      handler(req, res);
+    });
+  });
+
+  const io = new Server(httpServer, {
+    cors: {
+      origin: [
+        process.env.NEXT_PUBLIC_LOCAL_NETWORK_ADDRESS ||
+          "http://localhost:3000",
+      ],
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+  });
 
   io.on("connection", (socket) => {
     const updateLobbyAndCheckNextStep = async (roomCode: string) => {

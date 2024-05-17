@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "ioredis": "^5.4.1",
     "iron-session": "^8.0.1",
