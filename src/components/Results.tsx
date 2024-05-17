@@ -31,7 +31,7 @@ export default function Results() {
   }, []);
 
   return (
-    <section className="flex flex-col mt-20 bg-purple-200 min-h-screen-adjusted">
+    <section className="flex flex-col mt-20">
       <h2 className="absolute text-xl top-11 left-1/2 -translate-x-1/2">
         Results
       </h2>
