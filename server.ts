@@ -146,7 +146,7 @@ app.prepare().then(() => {
       io.to(roomCode).emit("proceed-to-results");
     };
 
-    socket.on("join-room", async (roomCode, username) => {
+    socket.on("join-room", async (roomCode, username, callback) => {
       let lobby = await getLobby(roomCode);
 
       if (!lobby) {
@@ -184,6 +184,7 @@ app.prepare().then(() => {
         await saveLobby(roomCode, lobby);
       }
 
+      callback();
       io.to(roomCode).emit("update-lobby", lobby.users);
     });
 

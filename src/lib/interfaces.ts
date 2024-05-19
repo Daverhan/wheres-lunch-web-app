@@ -11,3 +11,7 @@ export interface Lobby {
   locationWon: string;
   gameState: string;
 }
+
+export interface LobbyProps {
+  onLoaded: () => void;
+}
