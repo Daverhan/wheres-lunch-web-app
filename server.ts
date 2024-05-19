@@ -42,6 +42,8 @@ app.prepare().then(() => {
       await saveLobby(roomCode, lobby);
       io.to(roomCode).emit("update-lobby", lobby.users);
 
+      if (lobby.users.length <= 1) return;
+
       if (lobby.users.every((user) => user.ready)) {
         switch (lobby.gameState) {
           case "create_selections":
