@@ -10,18 +10,20 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/node-cron": "^3.0.11",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "ioredis": "^5.4.1",
     "iron-session": "^8.0.1",
     "next": "^14.2.3",
+    "node-cron": "^3.0.3",
     "react": "^18",
     "react-dom": "^18",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
-    "@types/node": "^20.12.11",
+    "@types/node": "^20.12.12",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
