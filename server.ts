@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
 import cors from "cors";
-import { getLobby, saveLobby } from "./src/lib/redis";
+import { getLobby, saveLobby } from "./src/lib/redis.js";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOST || "localhost";
@@ -24,10 +24,7 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer, {
     cors: {
-      origin: [
-        process.env.NEXT_PUBLIC_LOCAL_NETWORK_ADDRESS ||
-          "http://localhost:3000",
-      ],
+      origin: [process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000"],
       methods: ["GET", "POST"],
       credentials: true,
     },
