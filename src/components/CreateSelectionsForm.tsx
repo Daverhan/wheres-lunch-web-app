@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent } from "react";
+import { FormEvent, KeyboardEventHandler, useEffect } from "react";
 import { socket } from "../../src/socket";
 
 export default function CreateSelectionsForm() {
@@ -23,9 +23,88 @@ export default function CreateSelectionsForm() {
     }
   };
 
+  const handleKeyDown: KeyboardEventHandler<HTMLFormElement> = (e) => {
+    if (e.key === "Enter") e.preventDefault();
+  };
+
+  useEffect(() => {
+    window.initAutocomplete = () => {
+      const firstSelectionInput = document.getElementById(
+        "first_selection"
+      ) as HTMLInputElement;
+
+      const secondSelectionInput = document.getElementById(
+        "second_selection"
+      ) as HTMLInputElement;
+
+      const thirdSelectionInput = document.getElementById(
+        "third_selection"
+      ) as HTMLInputElement;
+
+      const options = {
+        types: ["restaurant"],
+        fields: ["place_id", "geometry", "name"],
+      };
+
+      const firstSelectionAutocomplete = new google.maps.places.Autocomplete(
+        firstSelectionInput,
+        options
+      );
+      const secondSelectionAutocomplete = new google.maps.places.Autocomplete(
+        secondSelectionInput,
+        options
+      );
+      const thirdSelectionAutocomplete = new google.maps.places.Autocomplete(
+        thirdSelectionInput,
+        options
+      );
+
+      firstSelectionAutocomplete.addListener("place_changed", () => {
+        onPlaceChanged(1);
+      });
+      secondSelectionAutocomplete.addListener("place_changed", () => {
+        onPlaceChanged(2);
+      });
+      thirdSelectionAutocomplete.addListener("place_changed", () => {
+        onPlaceChanged(3);
+      });
+
+      function onPlaceChanged(value: number) {
+        let place;
+
+        switch (value) {
+          case 1:
+            place = firstSelectionAutocomplete.getPlace();
+            if (place.name) firstSelectionInput.value = place.name;
+            break;
+          case 2:
+            place = secondSelectionAutocomplete.getPlace();
+            if (place.name) secondSelectionInput.value = place.name;
+            break;
+          case 3:
+            place = thirdSelectionAutocomplete.getPlace();
+            if (place.name) thirdSelectionInput.value = place.name;
+            break;
+        }
+      }
+    };
+
+    const loadPlacesLibraryScript = document.createElement("script");
+    loadPlacesLibraryScript.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GMP_API_KEY}&loading=async&libraries=places&callback=initAutocomplete`;
+    loadPlacesLibraryScript.async = true;
+    loadPlacesLibraryScript.defer = true;
+    document.body.appendChild(loadPlacesLibraryScript);
+
+    return () => {
+      document.body.removeChild(loadPlacesLibraryScript);
+      window.initAutocomplete = undefined;
+    };
+  }, []);
+
   return (
     <form
       onSubmit={handleSelectionConfirmation}
+      onKeyDown={handleKeyDown}
       className="flex flex-col w-80 sm:w-96 px-1 gap-2 mt-4"
     >
       <h2 className="text-lg sm:text-2xl text-center">Selection Phase</h2>

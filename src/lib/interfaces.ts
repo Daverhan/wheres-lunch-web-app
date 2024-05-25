@@ -15,3 +15,9 @@ export interface Lobby {
 export interface LobbyProps {
   onLoaded: () => void;
 }
+
+declare global {
+  interface Window {
+    initAutocomplete?: () => void;
+  }
+}

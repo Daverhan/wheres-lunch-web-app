@@ -63,7 +63,9 @@ app.prepare().then(() => {
 
       lobby.gameState = "vote_selections";
       lobby.users.forEach((user) => (user.ready = false));
-      lobby.selections = lobby.users.flatMap((user) => user.selections);
+      lobby.selections = Array.from(
+        new Set(lobby.users.flatMap((user) => user.selections))
+      );
 
       await saveLobby(roomCode, lobby);
       await updateLobbyAndCheckNextStep(roomCode);
