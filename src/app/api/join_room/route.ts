@@ -10,7 +10,10 @@ export async function POST(req: NextRequest) {
 
   if (!roomCode || !username) {
     return NextResponse.json(
-      { error: "Room code or username was not entered" },
+      {
+        error: "Room code or username was not entered",
+        error_code: "EMPTY_INPUT_FIELDS",
+      },
       { status: 400 }
     );
   }
