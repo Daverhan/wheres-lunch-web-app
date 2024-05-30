@@ -24,7 +24,10 @@ export default function JoinRoomForm() {
       if (
         responseJSON.error_code === "ROOM_HAS_STARTED" ||
         responseJSON.error_code === "USERNAME_UNAVAILABLE" ||
-        responseJSON.error_code === "EMPTY_INPUT_FIELDS"
+        responseJSON.error_code === "EMPTY_INPUT_FIELDS" ||
+        responseJSON.error_code === "ROOM_CODE_TOO_LONG" ||
+        responseJSON.error_code === "USERNAME_TOO_LONG" ||
+        responseJSON.error_code === "INVALID_INPUT_FIELDS"
       )
         setErrorMessage(`${errorMessagePrefix}: ${responseJSON.error}`);
       else setErrorMessage(errorMessagePrefix);
