@@ -33,10 +33,8 @@ export default function VoteSelectionsForm() {
       onSubmit={handleVoteConfirmation}
       className="flex flex-col w-80 sm:w-96 px-1 gap-2 mt-4"
     >
-      <h2 className="text-lg sm:text-2xl text-center">Voting Phase</h2>
-      <h3 className="text-center sm:text-lg -mt-2">
-        Vote for the selections you are interested in
-      </h3>
+      <h2 className="text-lg sm:text-3xl text-center mt-4">Voting Phase</h2>
+      <h3 className="text-center sm:text-2xl -mt-2">Vote for your choices</h3>
       <div className="flex flex-col gap-3">
         {selections.map((selection, index) => (
           <div key={index} className="flex gap-2">
@@ -47,13 +45,13 @@ export default function VoteSelectionsForm() {
               onChange={() => handleCheckboxChange(selection)}
               className="h-6 sm:h-7 w-5"
             />
-            <label htmlFor={"selection_" + index} className="sm:text-lg">
+            <label htmlFor={"selection_" + index} className="sm:text-xl">
               {selection}
             </label>
           </div>
         ))}
       </div>
-      <button className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border sm:text-xl border-gray-400 mt-2 rounded shadow">
+      <button className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border sm:text-2xl border-gray-400 mt-2 rounded shadow">
         Confirm Votes
       </button>
     </form>

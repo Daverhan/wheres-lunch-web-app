@@ -35,14 +35,15 @@ export default function JoinRoomForm() {
     <div>
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col text-xl items-center gap-6"
+        className="flex flex-col text-2xl items-center gap-6"
       >
-        <div className="flex flex-col gap-4 text-xl">
+        <div className="flex flex-col gap-4">
           <input
             placeholder="Room Code"
             type="text"
             name="room_code"
             id="room_code"
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           ></input>
           <input
             placeholder="Username"
@@ -50,9 +51,10 @@ export default function JoinRoomForm() {
             name="username"
             id="username"
             autoComplete="off"
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           ></input>
         </div>
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full w-36">
+        <button className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow">
           Join Room
         </button>
       </form>

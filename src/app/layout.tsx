@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
+import { Raleway } from "next/font/google";
 import "../styles/globals.css";
 import Header from "../components/Header";
+
+const raleway = Raleway({
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Where's Lunch?",
@@ -15,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-purple-200">
+      <body className={`bg-[#b794f4] ${raleway.className}`}>
         <Header />
         <main>{children}</main>
       </body>

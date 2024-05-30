@@ -7,9 +7,9 @@ export default function Home() {
         Join Room
       </h2>
       <div className="flex flex-col items-center mt-4 gap-6">
-        <h2 className="text-lg text-center">
-          If the entered room code exists, you will join the room. If it does
-          not exist, one will be created.
+        <h2 className="text-xl lg:text-2xl text-center">
+          Enter a room code to join. If it does not exist, a new room will be
+          created.
         </h2>
         <JoinRoomForm />
       </div>

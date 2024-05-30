@@ -36,7 +36,9 @@ export default function Results() {
       <h2 className="absolute text-xl top-11 left-1/2 -translate-x-1/2">
         Results
       </h2>
-      <h2 className="text-2xl text-center">The winner is: {winner}</h2>
+      <h2 className="text-2xl text-center mt-2">
+        Lunch is at <span className="font-bold">{winner}</span>
+      </h2>
     </section>
   );
 }
