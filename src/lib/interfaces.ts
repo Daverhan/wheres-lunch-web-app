@@ -3,6 +3,7 @@ export interface User {
   ready: boolean;
   selections: string[];
   votes: string[];
+  lastTimeActive: number;
 }
 
 export interface Lobby {

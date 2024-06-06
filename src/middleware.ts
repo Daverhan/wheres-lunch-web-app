@@ -15,6 +15,14 @@ export async function middleware(req: NextRequest, res: NextResponse) {
   if (roomStatus) {
     if (
       (pathName.includes("/lobby/create_selections") &&
+        "finished" === roomStatus) ||
+      (pathName.includes("/lobby/vote_selections") && "finished" === roomStatus)
+    ) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    if (
+      (pathName.includes("/lobby/create_selections") &&
         "create_selections" !== roomStatus) ||
       (pathName.includes("/lobby/vote_selections") &&
         "vote_selections" !== roomStatus) ||

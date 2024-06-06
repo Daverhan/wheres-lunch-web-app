@@ -17,42 +17,43 @@ export default function Lobby(props: LobbyProps) {
         const responseJSON = await response.json();
         setRoomCode(responseJSON.roomCode);
 
+        const joinRoom = () => {
+          socket.emit(
+            "join-room",
+            responseJSON.roomCode,
+            responseJSON.username,
+            props.onLoaded
+          );
+        };
+
         socket.connect();
-        socket.emit(
-          "join-room",
-          responseJSON.roomCode,
-          responseJSON.username,
-          props.onLoaded
-        );
+        socket.on("connect", () => {
+          joinRoom();
+        });
       }
     };
 
     getUserInfo();
 
+    setInterval(() => {
+      socket.emit("heartbeat");
+    }, 15000);
+
     const handleUpdateLobby = (users: User[]) => {
       setJoinedUsers(users);
     };
 
-    socket.on("update-lobby", handleUpdateLobby);
-
-    socket.on("proceed-to-voting", () => {
+    const goToVoteSelections = () => {
       router.replace("/lobby/vote_selections");
-    });
+    };
 
-    socket.on("proceed-to-results", () => {
+    const goToResults = () => {
       router.replace("/results");
-    });
-
-    const handleBeforeUnload = () => {
-      socket.disconnect();
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      handleBeforeUnload();
-    };
+    socket.on("update-lobby", handleUpdateLobby);
+    socket.on("proceed-to-voting", goToVoteSelections);
+    socket.on("proceed-to-results", goToResults);
   }, []);
 
   return (
