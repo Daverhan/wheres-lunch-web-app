@@ -63,7 +63,7 @@ app.prepare().then(() => {
         }
       }
     } while (cursor !== "0");
-  }, 30000);
+  }, 15000);
 
   const updateLobbyAndCheckNextStep = async (roomCode: string) => {
     let lobby = await getLobby(roomCode);
@@ -245,7 +245,8 @@ app.prepare().then(() => {
         socket.join(roomCode);
       }
 
-      callback();
+      if (callback) callback();
+
       io.to(roomCode).emit("update-lobby", lobby.users);
     });
 

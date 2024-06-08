@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { socket } from "../socket";
 import { User, LobbyProps } from "../lib/interfaces";
 import { useRouter } from "next/navigation";
@@ -7,6 +7,9 @@ import { useRouter } from "next/navigation";
 export default function Lobby(props: LobbyProps) {
   const [roomCode, setRoomCode] = useState<string>("");
   const [joinedUsers, setJoinedUsers] = useState<User[]>([]);
+  const joinedUsersRef = useRef<User[]>([]);
+  const usernameRef = useRef<string>("");
+  const roomCodeRef = useRef<string>("");
   const router = useRouter();
 
   useEffect(() => {
@@ -16,6 +19,8 @@ export default function Lobby(props: LobbyProps) {
       if (response.ok) {
         const responseJSON = await response.json();
         setRoomCode(responseJSON.roomCode);
+        roomCodeRef.current = responseJSON.roomCode;
+        usernameRef.current = responseJSON.username;
 
         const joinRoom = () => {
           socket.emit(
@@ -41,6 +46,7 @@ export default function Lobby(props: LobbyProps) {
 
     const handleUpdateLobby = (users: User[]) => {
       setJoinedUsers(users);
+      joinedUsersRef.current = users;
     };
 
     const goToVoteSelections = () => {
@@ -54,6 +60,30 @@ export default function Lobby(props: LobbyProps) {
     socket.on("update-lobby", handleUpdateLobby);
     socket.on("proceed-to-voting", goToVoteSelections);
     socket.on("proceed-to-results", goToResults);
+  }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        if (
+          !joinedUsersRef.current.some(
+            (user) => user.username === usernameRef.current
+          )
+        ) {
+          socket.disconnect();
+          socket.connect();
+          socket.on("connect", () => {
+            socket.emit("join-room", roomCodeRef.current, usernameRef.current);
+          });
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   return (
