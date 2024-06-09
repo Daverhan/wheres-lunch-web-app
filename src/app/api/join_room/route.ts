@@ -14,8 +14,8 @@ const isAlphanumeric = (input_str: string): boolean => {
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
-  const roomCode = formData.get("room_code");
-  const username = formData.get("username");
+  const roomCode = formData.get("room_code")?.toString().trim();
+  const username = formData.get("username")?.toString().trim();
 
   if (!roomCode || !username) {
     return NextResponse.json(
@@ -27,10 +27,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (
-    !isAlphanumeric(roomCode.toString()) ||
-    !isAlphanumeric(username.toString())
-  ) {
+  if (!isAlphanumeric(roomCode) || !isAlphanumeric(username)) {
     return NextResponse.json(
       {
         error: "Room code and username must consist of alphanumeric characters",
@@ -40,7 +37,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (roomCode.toString().length > MAX_ROOM_CODE_LENGTH) {
+  if (roomCode.length > MAX_ROOM_CODE_LENGTH) {
     return NextResponse.json(
       {
         error: `Room code must be at most ${MAX_ROOM_CODE_LENGTH} characters`,
@@ -50,7 +47,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (username.toString().length > MAX_USERNAME_LENGTH) {
+  if (username.length > MAX_USERNAME_LENGTH) {
     return NextResponse.json(
       {
         error: `Username must be at most ${MAX_USERNAME_LENGTH} characters`,
@@ -60,7 +57,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const lobby = await getLobby(roomCode.toString());
+  const lobby = await getLobby(roomCode);
 
   if (lobby) {
     if (lobby.state !== CREATION_LOBBY_STATE) {
@@ -87,8 +84,8 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ roomCode });
 
   const session = await getIronSession(req, res, sessionOptions);
-  session.roomCode = roomCode.toString();
-  session.username = username.toString();
+  session.roomCode = roomCode;
+  session.username = username;
   await session.save();
 
   return res;
