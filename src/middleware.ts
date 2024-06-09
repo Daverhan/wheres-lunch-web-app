@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import sessionOptions from "./lib/session";
+import {
+  CREATION_LOBBY_STATE,
+  VOTING_LOBBY_STATE,
+  RESULTS_LOBBY_STATE,
+} from "./lib/constants";
 
 export async function middleware(req: NextRequest, res: NextResponse) {
   const session = await getIronSession(req, res, sessionOptions);
@@ -15,18 +20,19 @@ export async function middleware(req: NextRequest, res: NextResponse) {
   if (roomStatus) {
     if (
       (pathName.includes("/lobby/create_selections") &&
-        "finished" === roomStatus) ||
-      (pathName.includes("/lobby/vote_selections") && "finished" === roomStatus)
+        RESULTS_LOBBY_STATE === roomStatus) ||
+      (pathName.includes("/lobby/vote_selections") &&
+        RESULTS_LOBBY_STATE === roomStatus)
     ) {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
     if (
       (pathName.includes("/lobby/create_selections") &&
-        "create_selections" !== roomStatus) ||
+        CREATION_LOBBY_STATE !== roomStatus) ||
       (pathName.includes("/lobby/vote_selections") &&
-        "vote_selections" !== roomStatus) ||
-      (pathName.includes("/results") && "finished" !== roomStatus)
+        VOTING_LOBBY_STATE !== roomStatus) ||
+      (pathName.includes("/results") && RESULTS_LOBBY_STATE !== roomStatus)
     ) {
       return NextResponse.redirect(new URL(`/lobby/${roomStatus}`, req.url));
     }

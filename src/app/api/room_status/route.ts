@@ -14,5 +14,5 @@ export async function GET(req: NextRequest, res: NextResponse) {
     );
   }
 
-  return NextResponse.json({ roomStatus: lobby?.gameState });
+  return NextResponse.json({ roomStatus: lobby?.state });
 }

@@ -5,6 +5,13 @@ import { Server } from "socket.io";
 import cors from "cors";
 import { redis, getLobby, saveLobby } from "./src/lib/redis.js";
 import { Lobby } from "./src/lib/interfaces.js";
+import {
+  CREATION_LOBBY_STATE,
+  VOTING_LOBBY_STATE,
+  RESULTS_LOBBY_STATE,
+  MAX_CLIENT_INACTIVITY_TIME,
+  LOBBY_INACTIVITY_CHECK_INTERVAL,
+} from "./src/lib/constants.js";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOST || "localhost";
@@ -46,14 +53,17 @@ app.prepare().then(() => {
           let isUpdated = false;
 
           lobby.users = lobby.users.filter((user) => {
-            if (currentTime - user.lastTimeActive > 30000) {
+            if (
+              currentTime - user.lastTimeActive >
+              MAX_CLIENT_INACTIVITY_TIME
+            ) {
               isUpdated = true;
               return false;
             }
             return true;
           });
 
-          if (lobby.users.length === 0 || lobby.gameState === "finished") {
+          if (lobby.users.length === 0 || lobby.state === RESULTS_LOBBY_STATE) {
             await redis.del(key);
           } else if (isUpdated) {
             await redis.set(key, JSON.stringify(lobby));
@@ -63,7 +73,7 @@ app.prepare().then(() => {
         }
       }
     } while (cursor !== "0");
-  }, 15000);
+  }, LOBBY_INACTIVITY_CHECK_INTERVAL);
 
   const updateLobbyAndCheckNextStep = async (roomCode: string) => {
     let lobby = await getLobby(roomCode);
@@ -75,11 +85,11 @@ app.prepare().then(() => {
     if (lobby.users.length <= 1) return;
 
     if (lobby.users.every((user) => user.ready)) {
-      switch (lobby.gameState) {
-        case "create_selections":
+      switch (lobby.state) {
+        case CREATION_LOBBY_STATE:
           proceedToVoting(roomCode);
           break;
-        case "vote_selections":
+        case VOTING_LOBBY_STATE:
           proceedToResults(roomCode);
           break;
         default:
@@ -94,7 +104,7 @@ app.prepare().then(() => {
     if (!lobby)
       throw new Error("Lobby was unable to be retrieved in proceedToVoting");
 
-    lobby.gameState = "vote_selections";
+    lobby.state = VOTING_LOBBY_STATE;
     lobby.users.forEach((user) => (user.ready = false));
     lobby.selections = Array.from(
       new Set(lobby.users.flatMap((user) => user.selections))
@@ -112,7 +122,7 @@ app.prepare().then(() => {
     if (!lobby)
       throw new Error("Lobby was unable to be retrieved in proceedToResults");
 
-    lobby.gameState = "finished";
+    lobby.state = RESULTS_LOBBY_STATE;
     const aggregatedVotes = new Map();
 
     lobby.users.forEach((user) => {
@@ -201,7 +211,7 @@ app.prepare().then(() => {
           users: [],
           selections: [],
           locationWon: "",
-          gameState: "create_selections",
+          state: CREATION_LOBBY_STATE,
         };
 
         lobby.users.push({

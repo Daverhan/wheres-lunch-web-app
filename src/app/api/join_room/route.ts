@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import sessionOptions from "../../../lib/session";
 import { getLobby } from "../../../lib/redis";
-
-const ROOM_CODE_MAX_LENGTH = 10;
-const USERNAME_MAX_LENGTH = 20;
+import {
+  MAX_ROOM_CODE_LENGTH,
+  MAX_USERNAME_LENGTH,
+  CREATION_LOBBY_STATE,
+} from "../../../lib/constants";
 
 const isAlphanumeric = (input_str: string): boolean => {
   return /^[a-zA-Z0-9]*$/.test(input_str);
@@ -38,20 +40,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (roomCode.toString().length > ROOM_CODE_MAX_LENGTH) {
+  if (roomCode.toString().length > MAX_ROOM_CODE_LENGTH) {
     return NextResponse.json(
       {
-        error: `Room code must be at most ${ROOM_CODE_MAX_LENGTH} characters`,
+        error: `Room code must be at most ${MAX_ROOM_CODE_LENGTH} characters`,
         error_code: "ROOM_CODE_TOO_LONG",
       },
       { status: 400 }
     );
   }
 
-  if (username.toString().length > USERNAME_MAX_LENGTH) {
+  if (username.toString().length > MAX_USERNAME_LENGTH) {
     return NextResponse.json(
       {
-        error: `Username must be at most ${USERNAME_MAX_LENGTH} characters`,
+        error: `Username must be at most ${MAX_USERNAME_LENGTH} characters`,
         error_code: "USERNAME_TOO_LONG",
       },
       { status: 400 }
@@ -61,7 +63,7 @@ export async function POST(req: NextRequest) {
   const lobby = await getLobby(roomCode.toString());
 
   if (lobby) {
-    if (lobby.gameState !== "create_selections") {
+    if (lobby.state !== CREATION_LOBBY_STATE) {
       return NextResponse.json(
         {
           error: "The room has already started",

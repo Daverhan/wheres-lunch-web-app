@@ -10,7 +10,7 @@ export interface Lobby {
   users: User[];
   selections: string[];
   locationWon: string;
-  gameState: string;
+  state: string;
 }
 
 export interface LobbyProps {
