@@ -27,76 +27,48 @@ export default function CreateSelectionsForm() {
     if (e.key === "Enter") e.preventDefault();
   };
 
-  useEffect(() => {
-    window.initAutocomplete = () => {
-      const firstSelectionInput = document.getElementById(
-        "first_selection"
-      ) as HTMLInputElement;
+  const initAutocomplete = () => {
+    ["first_selection", "second_selection", "third_selection"].forEach((id) => {
+      const input = document.getElementById(id) as HTMLInputElement;
 
-      const secondSelectionInput = document.getElementById(
-        "second_selection"
-      ) as HTMLInputElement;
-
-      const thirdSelectionInput = document.getElementById(
-        "third_selection"
-      ) as HTMLInputElement;
+      if (!input) return;
 
       const options = {
         types: ["restaurant"],
         fields: ["place_id", "geometry", "name"],
       };
 
-      const firstSelectionAutocomplete = new google.maps.places.Autocomplete(
-        firstSelectionInput,
-        options
-      );
-      const secondSelectionAutocomplete = new google.maps.places.Autocomplete(
-        secondSelectionInput,
-        options
-      );
-      const thirdSelectionAutocomplete = new google.maps.places.Autocomplete(
-        thirdSelectionInput,
+      const placeAutocomplete = new google.maps.places.Autocomplete(
+        input,
         options
       );
 
-      firstSelectionAutocomplete.addListener("place_changed", () => {
-        onPlaceChanged(1);
-      });
-      secondSelectionAutocomplete.addListener("place_changed", () => {
-        onPlaceChanged(2);
-      });
-      thirdSelectionAutocomplete.addListener("place_changed", () => {
-        onPlaceChanged(3);
-      });
+      placeAutocomplete.addListener("place_changed", () => {
+        const place = placeAutocomplete.getPlace();
 
-      function onPlaceChanged(value: number) {
-        let place;
+        if (place.name) input.value = place.name;
+      });
+    });
+  };
 
-        switch (value) {
-          case 1:
-            place = firstSelectionAutocomplete.getPlace();
-            if (place.name) firstSelectionInput.value = place.name;
-            break;
-          case 2:
-            place = secondSelectionAutocomplete.getPlace();
-            if (place.name) secondSelectionInput.value = place.name;
-            break;
-          case 3:
-            place = thirdSelectionAutocomplete.getPlace();
-            if (place.name) thirdSelectionInput.value = place.name;
-            break;
-        }
-      }
-    };
+  useEffect(() => {
+    const scriptId = "google-maps-javascript-api";
+    let googleMapsJavaScriptAPIScript = document.getElementById(scriptId);
 
-    const loadPlacesLibraryScript = document.createElement("script");
-    loadPlacesLibraryScript.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GMP_API_KEY}&loading=async&libraries=places&callback=initAutocomplete`;
-    loadPlacesLibraryScript.async = true;
-    loadPlacesLibraryScript.defer = true;
-    document.body.appendChild(loadPlacesLibraryScript);
+    if (!googleMapsJavaScriptAPIScript) {
+      const loadPlacesLibraryScript = document.createElement("script");
+      loadPlacesLibraryScript.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GMP_API_KEY}&loading=async&libraries=places&callback=initAutocomplete`;
+      loadPlacesLibraryScript.id = scriptId;
+      loadPlacesLibraryScript.async = true;
+      loadPlacesLibraryScript.defer = true;
+      document.body.appendChild(loadPlacesLibraryScript);
+    } else if (window.google && window.google.maps) {
+      initAutocomplete();
+    }
+
+    window.initAutocomplete = initAutocomplete;
 
     return () => {
-      document.body.removeChild(loadPlacesLibraryScript);
       window.initAutocomplete = undefined;
     };
   }, []);

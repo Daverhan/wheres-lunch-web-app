@@ -14,7 +14,8 @@ export interface Lobby {
 }
 
 export interface LobbyProps {
-  onLoaded: () => void;
+  lobbyLoaded: boolean;
+  setLobbyLoaded: (isLobbyLoaded: boolean) => void;
 }
 
 declare global {

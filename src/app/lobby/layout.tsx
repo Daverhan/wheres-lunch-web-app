@@ -7,7 +7,12 @@ export default function LobbyLayout({ children }: { children: ReactNode }) {
 
   return (
     <section className="flex flex-col items-center mt-20">
-      <Lobby onLoaded={() => setLobbyLoaded(true)} />
+      <Lobby
+        lobbyLoaded={lobbyLoaded}
+        setLobbyLoaded={(isLobbyLoaded: boolean) =>
+          setLobbyLoaded(isLobbyLoaded)
+        }
+      />
       {lobbyLoaded && children}
     </section>
   );

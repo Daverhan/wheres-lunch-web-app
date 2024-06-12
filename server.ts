@@ -156,7 +156,9 @@ app.prepare().then(() => {
       socket.emit("get-selections-response", lobby.selections);
     });
 
-    socket.on("get-results-request", async (roomCode) => {
+    socket.on("get-results-request", async () => {
+      const roomCode = socket.data.roomCode;
+
       let lobby = await getLobby(roomCode);
 
       if (!lobby)
@@ -203,7 +205,11 @@ app.prepare().then(() => {
       }
     });
 
-    socket.on("join-room", async (roomCode, username, callback) => {
+    socket.on("join-room", async (roomCode, username) => {
+      socket.data.username = username;
+      socket.data.roomCode = roomCode;
+      socket.join(roomCode);
+
       let lobby = await getLobby(roomCode);
 
       if (!lobby) {
@@ -221,10 +227,6 @@ app.prepare().then(() => {
           votes: [],
           lastTimeActive: Date.now(),
         });
-
-        socket.data.username = username;
-        socket.data.roomCode = roomCode;
-        socket.join(roomCode);
 
         await saveLobby(roomCode, lobby);
       } else {
@@ -249,13 +251,7 @@ app.prepare().then(() => {
 
           await saveLobby(roomCode, lobby);
         }
-
-        socket.data.username = username;
-        socket.data.roomCode = roomCode;
-        socket.join(roomCode);
       }
-
-      if (callback) callback();
 
       io.to(roomCode).emit("update-lobby", lobby.users);
     });
