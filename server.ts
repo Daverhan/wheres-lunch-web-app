@@ -133,9 +133,18 @@ app.prepare().then(() => {
 
     let maxVotes = Math.max(...aggregatedVotes.values());
 
-    lobby.locationWon = [...aggregatedVotes.entries()]
+    const potentialLocationWinners = [...aggregatedVotes.entries()]
       .filter(([_, v]) => v === maxVotes)
-      .map(([k]) => k)[0];
+      .map(([k]) => k);
+
+    if (potentialLocationWinners.length === 0) {
+      lobby.locationWon = "N/A";
+    } else {
+      lobby.locationWon =
+        potentialLocationWinners[
+          Math.floor(Math.random() * potentialLocationWinners.length)
+        ];
+    }
 
     await saveLobby(roomCode, lobby);
     await updateLobbyAndCheckNextStep(roomCode);
