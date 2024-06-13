@@ -16,10 +16,6 @@ export default function Lobby(props: LobbyProps) {
   const roomCodeRef = useRef<string>("");
   const router = useRouter();
 
-  const joinRoom = () => {
-    socket.emit("join-room", roomCodeRef.current, usernameRef.current);
-  };
-
   const verifyLobbyState = async () => {
     const currentRoomStatusResponse = await fetch("/api/room_status");
 
@@ -36,6 +32,10 @@ export default function Lobby(props: LobbyProps) {
   };
 
   useEffect(() => {
+    const joinRoom = () => {
+      socket.emit("join-room", roomCodeRef.current, usernameRef.current);
+    };
+
     const setupLobby = async () => {
       const currentUserResponse = await fetch("/api/current_user");
 
@@ -53,12 +53,6 @@ export default function Lobby(props: LobbyProps) {
       }
     };
 
-    setupLobby();
-
-    const heartbeat = setInterval(() => {
-      socket.emit("heartbeat");
-    }, CLIENT_HEARTBEAT_INTERVAL);
-
     const handleUpdateLobby = (users: User[]) => {
       setJoinedUsers(users);
       joinedUsersRef.current = users;
@@ -72,9 +66,9 @@ export default function Lobby(props: LobbyProps) {
       router.replace("/results");
     };
 
-    socket.on("update-lobby", handleUpdateLobby);
-    socket.on("proceed-to-voting", goToVoteSelections);
-    socket.on("proceed-to-results", goToResults);
+    const heartbeat = setInterval(() => {
+      socket.emit("heartbeat");
+    }, CLIENT_HEARTBEAT_INTERVAL);
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -83,6 +77,12 @@ export default function Lobby(props: LobbyProps) {
         socket.connect();
       }
     };
+
+    setupLobby();
+
+    socket.on("update-lobby", handleUpdateLobby);
+    socket.on("proceed-to-voting", goToVoteSelections);
+    socket.on("proceed-to-results", goToResults);
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
